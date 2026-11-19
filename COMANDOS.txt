@@ -1,0 +1,58 @@
+ASTRA PRO · ROS 2 · ESP32
+Comandos de consola para Windows y Ubuntu en WSL 2
+
+1. Preparar PowerShell
+
+Cierra con Esc cualquier visor anterior. Abre PowerShell en la raíz del
+proyecto y copia este bloque. Se requiere Python 3.11 de 64 bits.
+Las variables quedan disponibles en esa consola.
+
+  $python = (Get-Command python -ErrorAction Stop).Source
+  & $python --version
+  $sdk = Read-Host 'Ruta de NiViewer del SDK Orbbec que contiene OpenNI2.dll'
+  $vision = '.\.venv\Scripts\python.exe'
+  if (!(Test-Path $vision)) {
+      & $python -m venv .venv
+      & $vision -m pip install -r .\diagnostico\requirements-rgb.txt
+  }
+
+2. Ejecutar un modo del visor
+
+Puerta automática por rostro. Abre con Z de 0,50 m o menos y cierra tras 3 s.
+
+  & $vision -B .\diagnostico\visor_registro.py --sdk $sdk --rostros --puerto COM3
+
+Selección manual. Cada clic válido muestra XYZ y activa un ciclo del servo.
+
+  & $vision -B .\diagnostico\visor_registro.py --sdk $sdk --enviar-ros --puerto COM3
+
+Superposición y medición en píxeles. El primer clic pausa y marca el punto RGB.
+El segundo marca el borde depth. O alterna la superposición, S guarda y Esc cierra.
+
+  & $vision -B .\diagnostico\visor_registro.py --sdk $sdk
+
+Ejecuta un solo modo a la vez. Los modos con servo arrancan los nodos
+automáticamente. Si COM3 está ocupado, cierra el otro visor o el monitor serial.
+
+3. Inspeccionar ROS 2 desde otra consola
+
+Abre Ubuntu-24.04 desde Windows y copia estas líneas en Bash mientras esté
+corriendo el modo facial o manual. En esos modos se publica al activar un ciclo.
+
+  source /opt/ros/jazzy/setup.bash
+  ros2 node list
+  ros2 topic info /astra/xyz
+  ros2 topic echo /astra/xyz
+
+4. Diagnóstico rápido de profundidad
+
+Con el visor cerrado, ejecuta en PowerShell:
+
+  & $python -B .\diagnostico\probar_profundidad.py --sdk $sdk --muestras 30
+
+El visor usa la matriz local de resultados\calibracion_caja_evaluada.json.
+En otra instalación, usa --calibracion para indicar la matriz de esa cámara.
+Si Windows asigna otro puerto, cambia COM3. Si cambia el índice de la cámara
+RGB, indica el índice real mediante --rgb-index.
+Consulta README.md para calibración, cableado y firmware, y docs/ROS2.md
+para el contrato del tópico y los detalles de integración.
